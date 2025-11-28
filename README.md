@@ -5,7 +5,7 @@
 ![React Native](https://img.shields.io/badge/React%20Native-0.79+-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS-lightgrey.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.1-blue.svg)
 
 **A high-performance React Native Vision Camera plugin for real-time OCR (Optical Character Recognition)**
 
@@ -109,7 +109,7 @@ function AdvancedCameraComponent() {
     try {
       setIsProcessing(true);
       const result = performOcr(frame);
-      
+
       if (result?.text) {
         setDetectedText(result.text);
         // You can also send to your app's state management
@@ -136,13 +136,13 @@ function AdvancedCameraComponent() {
         frameProcessor={frameProcessor}
         frameProcessorFps={3} // Lower FPS for better performance
       />
-      
+
       {detectedText && (
         <View style={styles.textOverlay}>
           <Text style={styles.text}>{detectedText}</Text>
         </View>
       )}
-      
+
       {isProcessing && (
         <View style={styles.processingIndicator}>
           <Text>Processing...</Text>
@@ -240,19 +240,21 @@ Runtime `performOcr` options are recommended (see above). Initialization options
 ## 📱 Platform-Specific Details
 
 ### Android
+
 - Uses Google ML Kit Text Recognition
 - Optimized for Latin script languages
 - Automatic language detection
 - Fast processing with minimal memory usage
- - Bounding boxes returned in pixel units (subject to change to normalized in future)
+- Bounding boxes returned in pixel units (subject to change to normalized in future)
 
 ### iOS
+
 - Uses Apple's Vision Framework
 - Native integration with iOS camera system
 - Support for multiple text recognition languages
 - Optimized for iOS performance characteristics
- - Supports `recognitionLevel`, `recognitionLanguages`, `usesLanguageCorrection`
- - Bounding boxes returned normalized (0..1); y-origin is top-left in returned box structure
+- Supports `recognitionLevel`, `recognitionLanguages`, `usesLanguageCorrection`
+- Bounding boxes returned normalized (0..1); y-origin is top-left in returned box structure
 
 ## 🎨 Use Cases
 
@@ -273,6 +275,154 @@ This library is perfect for:
 - **Error Handling**: Always wrap OCR calls in try-catch blocks
 - **State Management**: Debounce text updates to avoid excessive re-renders
 - **Memory**: Process frames efficiently and avoid storing large amounts of data
+
+## 🔧 Troubleshooting
+
+### Android Issues
+
+#### Plugin Not Found / "Failed to load Frame Processor Plugin"
+
+**Problem:** The frame processor plugin isn't being registered properly.
+
+**Solutions:**
+
+1. **Clean and rebuild:**
+
+   ```bash
+   cd android
+   ./gradlew clean
+   cd ..
+   # Then rebuild your app
+   ```
+
+2. **Verify auto-linking:**
+
+   - Check that `react-native.config.js` exists in your project root
+   - Ensure the package is listed in `package.json` dependencies
+   - Run `npx react-native config` to verify the package is detected
+
+3. **Manual linking (if auto-linking fails):**
+
+   - Add to `android/settings.gradle`:
+     ```gradle
+     include ':vision-camera-ocr'
+     project(':vision-camera-ocr').projectDir = new File(rootProject.projectDir, '../node_modules/@bear-block/vision-camera-ocr/android')
+     ```
+   - Add to `android/app/build.gradle` dependencies:
+     ```gradle
+     implementation project(':vision-camera-ocr')
+     ```
+
+4. **Check React Native version:**
+
+   - Ensure you're using React Native 0.79+ (check `package.json`)
+   - Verify `react-native-vision-camera` >= 3.0 is installed
+   - Verify `react-native-worklets-core` ^1.5.0 is installed
+
+5. **Verify ML Kit dependency:**
+   - The library uses Google ML Kit Text Recognition
+   - Ensure your `android/build.gradle` has Google Maven repository:
+     ```gradle
+     repositories {
+       google()
+       mavenCentral()
+     }
+     ```
+
+#### Camera Permission Issues
+
+**Problem:** Camera permission is denied or not requested.
+
+**Solutions:**
+
+1. Add to `AndroidManifest.xml`:
+
+   ```xml
+   <uses-permission android:name="android.permission.CAMERA" />
+   <uses-feature android:name="android.hardware.camera" android:required="true" />
+   ```
+
+2. Request permission at runtime (React Native 0.79+):
+
+   ```typescript
+   import { PermissionsAndroid } from 'react-native';
+
+   const granted = await PermissionsAndroid.request(
+     PermissionsAndroid.PERMISSIONS.CAMERA
+   );
+   ```
+
+#### Build Errors
+
+**Problem:** Gradle build fails with dependency or compilation errors.
+
+**Solutions:**
+
+1. **Update Gradle:**
+
+   - Ensure Android Gradle Plugin 8.7.2+ is used
+   - Check `android/build.gradle` for correct versions
+
+2. **Clean build:**
+
+   ```bash
+   cd android
+   ./gradlew clean
+   rm -rf .gradle
+   cd ..
+   ```
+
+3. **Check minSdkVersion:**
+   - Library requires minSdkVersion 24
+   - Verify in `android/build.gradle`:
+     ```gradle
+     minSdkVersion 24
+     ```
+
+### iOS Issues
+
+#### Pod Install Fails
+
+**Solutions:**
+
+1. Update CocoaPods: `sudo gem install cocoapods`
+2. Clean pods: `cd ios && pod deintegrate && pod install`
+3. Clear cache: `rm -rf ~/Library/Caches/CocoaPods`
+
+#### Camera Permission
+
+**Solutions:**
+
+1. Add to `Info.plist`:
+   ```xml
+   <key>NSCameraUsageDescription</key>
+   <string>This app needs access to your camera to perform OCR</string>
+   ```
+
+### General Issues
+
+#### No Text Detected
+
+**Solutions:**
+
+1. Ensure good lighting conditions
+2. Hold camera steady and focus on text
+3. Try adjusting `frameProcessorFps` (lower values may help)
+4. Check that text is clear and not too small
+5. Verify the frame processor is being called (add console logs)
+
+#### Performance Issues
+
+**Solutions:**
+
+1. Reduce `frameProcessorFps` to 2-3
+2. Add throttling/debouncing to text updates
+3. Process frames conditionally (e.g., only when camera is focused)
+4. Avoid heavy operations in the frame processor worklet
+
+## 📱 Example App
+
+A complete working example app is available in the [`example`](./example) directory. See the [example README](./example/README.md) for setup instructions.
 
 ## 🤝 Contributing
 
