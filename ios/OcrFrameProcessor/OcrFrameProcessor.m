@@ -33,17 +33,32 @@
   BOOL includeBoxes = [arguments objectForKey:@"includeBoxes"] ? [[arguments objectForKey:@"includeBoxes"] boolValue] : NO;
   BOOL includeConfidence = [arguments objectForKey:@"includeConfidence"] ? [[arguments objectForKey:@"includeConfidence"] boolValue] : NO;
   NSLog(@"Args includeBoxes=%@ includeConfidence=%@", includeBoxes ? @"YES" : @"NO", includeConfidence ? @"YES" : @"NO");
+  
   CVPixelBufferRef pixelBuffer = CMSampleBufferGetImageBuffer(frame.buffer);
+  if (pixelBuffer == NULL) {
+    NSLog(@"Failed to get pixel buffer from frame");
+    return nil;
+  }
+  
   CIImage *ciImage = [CIImage imageWithCVPixelBuffer:pixelBuffer];
+  if (ciImage == nil) {
+    NSLog(@"Failed to create CIImage from pixel buffer");
+    return nil;
+  }
 
   CGImagePropertyOrientation orientation = [self cgImageOrientationFromUIImageOrientation:frame.orientation];
   VNImageRequestHandler *handler = [[VNImageRequestHandler alloc] initWithCIImage:ciImage orientation:orientation options:@{}];
+  if (handler == nil) {
+    NSLog(@"Failed to create VNImageRequestHandler");
+    return nil;
+  }
 
   __block NSMutableArray<NSDictionary *> *lineResults = [NSMutableArray array];
 
   VNRecognizeTextRequest *request = [[VNRecognizeTextRequest alloc] initWithCompletionHandler:^(VNRequest * _Nonnull request, NSError * _Nullable error) {
     if (error != nil) {
       NSLog(@"OCR recognition failed: %@", error);
+      // Note: Semaphore is signaled outside this handler, so early return is safe
       return;
     }
 
@@ -69,6 +84,11 @@
       }
     }
   }];
+  
+  if (request == nil) {
+    NSLog(@"Failed to create VNRecognizeTextRequest");
+    return nil;
+  }
 
   // Configure iOS-specific options
   NSString *level = [arguments objectForKey:@"recognitionLevel"];
