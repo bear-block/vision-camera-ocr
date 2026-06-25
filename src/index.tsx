@@ -1,67 +1,65 @@
-import { type Frame, VisionCameraProxy } from 'react-native-vision-camera';
+import { NitroModules } from 'react-native-nitro-modules';
+import type { OcrProcessor } from './specs/OcrProcessor.nitro';
 
-/**
- * Initialize the OCR frame processor plugin
- * @param options - Configuration options for the OCR plugin
- * @param options.model - Model type for text recognition (currently supports 'fast', but implementation is pending)
- */
-const plugin = VisionCameraProxy.initFrameProcessorPlugin('detectText', {
-  model: 'fast', // ⚠️ Note: Model option is currently logged but not fully implemented
-});
+export type {
+  OcrBox,
+  OcrWord,
+  OcrLine,
+  OcrBlock,
+  OcrResult,
+} from './specs/OcrProcessor.nitro';
 
-/**
- * Performs OCR (Optical Character Recognition) on camera frames.
- * Detects and extracts text from images in real-time.
- *
- * @param frame - The camera frame to process
- * @returns Object containing recognized text or null if no text found
- */
 export type OcrOptions = {
   includeBoxes?: boolean;
   includeConfidence?: boolean;
-  // iOS only options (ignored on Android)
   recognitionLevel?: 'fast' | 'accurate';
-  recognitionLanguages?: string[];
-  usesLanguageCorrection?: boolean;
 };
 
-export type OcrBox = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
+const ocrProcessor =
+  NitroModules.createHybridObject<OcrProcessor>('OcrProcessor');
 
-export type OcrWord = {
-  text: string;
-  box?: OcrBox;
-  confidence?: number;
-};
-
-export type OcrLine = {
-  text: string;
-  box?: OcrBox;
-  words?: OcrWord[];
-  confidence?: number;
-};
-
-export type OcrBlock = {
-  text: string;
-  box?: OcrBox;
-  lines?: OcrLine[];
-};
-
-export type OcrResult = {
-  text: string;
-  blocks?: OcrBlock[];
-};
-
+/**
+ * Performs OCR on a VisionCamera v5 Frame.
+ *
+ * Usage with useFrameOutput:
+ * ```ts
+ * import { performOcr } from '@bear-block/vision-camera-ocr'
+ * import { useFrameOutput } from 'react-native-vision-camera'
+ *
+ * const frameOutput = useFrameOutput({
+ *   onFrame(frame) {
+ *     'worklet'
+ *     if (!frame.hasNativeBuffer) {
+ *       frame.dispose()
+ *       return
+ *     }
+ *     const nativeBuffer = frame.getNativeBuffer()
+ *     const result = performOcr(nativeBuffer.pointer, frame.width, frame.height, frame.orientation)
+ *     nativeBuffer.release()
+ *     frame.dispose()
+ *     if (result) {
+ *       // handle result via runOnJS or shared value
+ *     }
+ *   }
+ * })
+ * ```
+ */
 export function performOcr(
-  frame: Frame,
+  bufferPointer: number | bigint,
+  width: number,
+  height: number,
+  orientation: string,
   options?: OcrOptions
-): OcrResult | null {
+): import('./specs/OcrProcessor.nitro').OcrResult | null {
   'worklet';
-  if (plugin == null)
-    throw new Error('Failed to load Frame Processor Plugin "detectText"!');
-  return plugin.call(frame, options ?? {}) as unknown as OcrResult | null;
+  const result = ocrProcessor.performOcr(
+    Number(bufferPointer),
+    width,
+    height,
+    orientation,
+    options?.includeBoxes ?? false,
+    options?.includeConfidence ?? false,
+    options?.recognitionLevel ?? 'fast'
+  );
+  return result ?? null;
 }
