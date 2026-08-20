@@ -47,25 +47,33 @@ jobs:
           ref: ${{ inputs.version && inputs.base_ref || steps.vars.outputs.tag }}
           fetch-depth: 0
 
+      # Written via an env var, never interpolated into the script body, so
+      # backticks / $() / heredoc markers in the notes stay literal text.
       - name: Write release notes
-        if: inputs.version != ''
+        if: inputs.notes != ''
         env:
           NOTES: ${{ inputs.notes }}
-        run: |
-          cat > "$RUNNER_TEMP/release-notes.md" <<'RELEASE_NOTES_EOF'
-          ${{ inputs.notes }}
-          RELEASE_NOTES_EOF
+        run: printf '%s' "$NOTES" > "$RUNNER_TEMP/release-notes.md"
 
       - name: Create GitHub Release
         if: inputs.version != ''
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.vars.outputs.tag }}
         run: |
-          gh release create "${{ steps.vars.outputs.tag }}" \
+          gh release create "$TAG" \
             --target "${{ inputs.base_ref }}" \
-            --title "${{ steps.vars.outputs.tag }}" \
+            --title "$TAG" \
             --notes-file "$RUNNER_TEMP/release-notes.md" \
             $( [ "${{ inputs.prerelease }}" = "true" ] && echo --prerelease )
+
+      # Lets a re-publish of an existing tag also repair its release notes.
+      - name: Update existing release notes
+        if: inputs.version == '' && inputs.notes != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.vars.outputs.tag }}
+        run: gh release edit "$TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
