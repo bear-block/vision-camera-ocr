@@ -18,7 +18,7 @@ import java.util.HashMap
 
 class OcrFrameProcessorPlugin(
   proxy: VisionCameraProxy,
-  options: Map<String, Any>?
+  private val options: Map<String, Any>?
 ) : FrameProcessorPlugin() {
 
   private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
