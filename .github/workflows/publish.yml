@@ -47,6 +47,15 @@ jobs:
           ref: ${{ inputs.version && inputs.base_ref || steps.vars.outputs.tag }}
           fetch-depth: 0
 
+      - name: Write release notes
+        if: inputs.version != ''
+        env:
+          NOTES: ${{ inputs.notes }}
+        run: |
+          cat > "$RUNNER_TEMP/release-notes.md" <<'RELEASE_NOTES_EOF'
+          ${{ inputs.notes }}
+          RELEASE_NOTES_EOF
+
       - name: Create GitHub Release
         if: inputs.version != ''
         env:
@@ -55,7 +64,7 @@ jobs:
           gh release create "${{ steps.vars.outputs.tag }}" \
             --target "${{ inputs.base_ref }}" \
             --title "${{ steps.vars.outputs.tag }}" \
-            --notes "${{ inputs.notes }}" \
+            --notes-file "$RUNNER_TEMP/release-notes.md" \
             $( [ "${{ inputs.prerelease }}" = "true" ] && echo --prerelease )
 
       - name: Setup Node.js
