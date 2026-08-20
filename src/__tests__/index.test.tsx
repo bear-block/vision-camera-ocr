@@ -38,7 +38,7 @@ describe('@bear-block/vision-camera-ocr', () => {
       const processor = getMockProcessor();
       performOcr(12345, 1920, 1080, 'up');
       expect(processor.performOcr).toHaveBeenCalledWith(
-        12345,
+        BigInt(12345),
         1920,
         1080,
         'up',
@@ -57,7 +57,7 @@ describe('@bear-block/vision-camera-ocr', () => {
       };
       performOcr(12345, 1920, 1080, 'up', options);
       expect(processor.performOcr).toHaveBeenCalledWith(
-        12345,
+        BigInt(12345),
         1920,
         1080,
         'up',
@@ -106,7 +106,7 @@ describe('@bear-block/vision-camera-ocr', () => {
       const processor = getMockProcessor();
       performOcr(BigInt(12345), 1920, 1080, 'up');
       expect(processor.performOcr).toHaveBeenCalledWith(
-        12345,
+        BigInt(12345),
         1920,
         1080,
         'up',
