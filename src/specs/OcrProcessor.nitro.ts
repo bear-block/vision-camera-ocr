@@ -1,4 +1,4 @@
-import type { HybridObject } from 'react-native-nitro-modules';
+import type { HybridObject, UInt64 } from 'react-native-nitro-modules';
 
 export interface OcrBox {
   x: number;
@@ -34,7 +34,7 @@ export interface OcrResult {
 export interface OcrProcessor
   extends HybridObject<{ ios: 'swift'; android: 'kotlin' }> {
   performOcr(
-    bufferAddress: number,
+    bufferAddress: UInt64,
     width: number,
     height: number,
     orientation: string,

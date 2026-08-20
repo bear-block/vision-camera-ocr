@@ -53,7 +53,7 @@ export function performOcr(
 ): import('./specs/OcrProcessor.nitro').OcrResult | null {
   'worklet';
   const result = ocrProcessor.performOcr(
-    Number(bufferPointer),
+    BigInt(bufferPointer),
     width,
     height,
     orientation,
