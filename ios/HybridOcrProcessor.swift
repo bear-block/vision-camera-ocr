@@ -4,11 +4,10 @@ import CoreImage
 import NitroModules
 
 class HybridOcrProcessor: HybridOcrProcessorSpec {
-  var hybridContext = margelo.nitro.HybridContext()
-  var memorySize: Int { return getSizeOf(self) }
+  var memorySize: Int { return 0 }
 
   func performOcr(
-    bufferAddress: Double,
+    bufferAddress: UInt64,
     width: Double,
     height: Double,
     orientation: String,
@@ -16,25 +15,17 @@ class HybridOcrProcessor: HybridOcrProcessorSpec {
     includeConfidence: Bool,
     recognitionLevel: String
   ) throws -> OcrResult? {
-    let pointer = UInt(bufferAddress)
+    let pointer = UInt(truncatingIfNeeded: bufferAddress)
     guard let rawPointer = UnsafeRawPointer(bitPattern: pointer) else {
       return nil
     }
     let pixelBuffer = Unmanaged<CVPixelBuffer>.fromOpaque(rawPointer).takeUnretainedValue()
 
-    guard let ciImage = CIImage(cvPixelBuffer: pixelBuffer) else {
-      return nil
-    }
-
-    let cgOrientation = mapOrientation(orientation)
-    let handler = VNImageRequestHandler(ciImage: ciImage, orientation: cgOrientation, options: [:])
+    let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+    let handler = VNImageRequestHandler(ciImage: ciImage, orientation: .right, options: [:])
 
     let request = VNRecognizeTextRequest()
-    if recognitionLevel == "accurate" {
-      request.recognitionLevel = .accurate
-    } else {
-      request.recognitionLevel = .fast
-    }
+    request.recognitionLevel = recognitionLevel == "accurate" ? .accurate : .fast
 
     try handler.perform([request])
 
@@ -78,15 +69,5 @@ class HybridOcrProcessor: HybridOcrProcessorSpec {
     )
 
     return OcrResult(text: joinedText, blocks: [block])
-  }
-
-  private func mapOrientation(_ orientation: String) -> CGImagePropertyOrientation {
-    switch orientation {
-    case "up": return .up
-    case "down": return .down
-    case "left": return .left
-    case "right": return .right
-    default: return .up
-    }
   }
 }
