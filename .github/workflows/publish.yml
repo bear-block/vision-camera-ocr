@@ -6,18 +6,57 @@ on:
       - published
   workflow_dispatch:
     inputs:
+      version:
+        description: 'New version to cut and publish (e.g. 4.0.2 or 5.0.0-beta.2). Leave empty to re-publish an existing tag instead.'
+        required: false
+      base_ref:
+        description: 'Branch to cut the new version from (only used when "version" is set)'
+        required: false
+        default: 'main'
       tag:
-        description: 'Git tag to publish (e.g. v4.0.1)'
-        required: true
+        description: 'Existing tag to (re-)publish (only used when "version" is empty)'
+        required: false
+      prerelease:
+        description: 'Mark as a pre-release / npm beta dist-tag'
+        type: boolean
+        default: false
+      notes:
+        description: 'Release notes (markdown, only used when "version" is set)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+      - name: Determine tag
+        id: vars
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "tag=v${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.event.release.tag_name || inputs.tag }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          ref: ${{ inputs.version && inputs.base_ref || steps.vars.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Create GitHub Release
+        if: inputs.version != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.vars.outputs.tag }}" \
+            --target "${{ inputs.base_ref }}" \
+            --title "${{ steps.vars.outputs.tag }}" \
+            --notes "${{ inputs.notes }}" \
+            $( [ "${{ inputs.prerelease }}" = "true" ] && echo --prerelease )
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -33,12 +72,12 @@ jobs:
 
       - name: Sync package.json version with release tag
         run: |
-          TAG="${{ github.event.release.tag_name || inputs.tag }}"
+          TAG="${{ steps.vars.outputs.tag }}"
           npm version "${TAG#v}" --no-git-tag-version --allow-same-version
 
       - name: Publish to npm
         run: |
-          if [ "${{ github.event.release.prerelease }}" = "true" ]; then
+          if [ "${{ inputs.prerelease || github.event.release.prerelease }}" = "true" ]; then
             npm publish --tag beta
           else
             npm publish
