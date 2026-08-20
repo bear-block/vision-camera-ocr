@@ -1,7 +1,5 @@
-package com.bearblock.visioncameraocr
+package com.margelo.nitro.visioncameraocr
 
-import android.graphics.Bitmap
-import android.graphics.ColorSpace
 import android.graphics.Rect
 import android.util.Log
 import com.google.android.gms.tasks.Tasks
@@ -9,12 +7,7 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
-import com.margelo.nitro.visioncameraocr.HybridOcrProcessorSpec
-import com.margelo.nitro.visioncameraocr.OcrBlock
-import com.margelo.nitro.visioncameraocr.OcrBox
-import com.margelo.nitro.visioncameraocr.OcrLine
-import com.margelo.nitro.visioncameraocr.OcrResult
-import com.margelo.nitro.visioncameraocr.OcrWord
+import com.bearblock.visioncameraocr.OcrNativeHelper
 
 class HybridOcrProcessor : HybridOcrProcessorSpec() {
   private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
@@ -23,7 +16,7 @@ class HybridOcrProcessor : HybridOcrProcessorSpec() {
     get() = 128
 
   override fun performOcr(
-    bufferAddress: Double,
+    bufferAddress: ULong,
     width: Double,
     height: Double,
     orientation: String,
@@ -32,24 +25,13 @@ class HybridOcrProcessor : HybridOcrProcessorSpec() {
     recognitionLevel: String
   ): OcrResult? {
     return try {
-      val pointer = bufferAddress.toLong()
-      val hardwareBuffer = OcrNativeHelper.pointerToHardwareBuffer(pointer)
+      val w = width.toInt()
+      val h = height.toInt()
+
+      val nv21 = OcrNativeHelper.hardwareBufferToNv21(bufferAddress.toLong(), w, h)
         ?: return null
 
-      val bitmap = Bitmap.wrapHardwareBuffer(hardwareBuffer, ColorSpace.get(ColorSpace.Named.SRGB))
-      hardwareBuffer.close()
-
-      if (bitmap == null) return null
-
-      val rotationDegrees = when (orientation) {
-        "up" -> 0
-        "right" -> 90
-        "down" -> 180
-        "left" -> 270
-        else -> 0
-      }
-
-      val inputImage = InputImage.fromBitmap(bitmap, rotationDegrees)
+      val inputImage = InputImage.fromByteArray(nv21, w, h, 90, InputImage.IMAGE_FORMAT_NV21)
       val visionText: Text = Tasks.await(recognizer.process(inputImage))
 
       if (visionText.text.isEmpty()) return null
