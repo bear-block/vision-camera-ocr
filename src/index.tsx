@@ -63,3 +63,25 @@ export function performOcr(
   );
   return result ?? null;
 }
+
+/**
+ * Performs OCR asynchronously on a local static image.
+ *
+ * `imageUri` may be an absolute path or a `file://` URI. Android also accepts
+ * `content://` URIs returned by document and photo-library pickers.
+ */
+export async function performOcrOnImage(
+  imageUri: string,
+  options?: OcrOptions
+): Promise<import('./specs/OcrProcessor.nitro').OcrResult> {
+  if (!imageUri.trim()) {
+    throw new Error('The image URI must not be empty.');
+  }
+
+  return ocrProcessor.performOcrOnImage(
+    imageUri,
+    options?.includeBoxes ?? false,
+    options?.includeConfidence ?? false,
+    options?.recognitionLevel ?? 'fast'
+  );
+}

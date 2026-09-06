@@ -2,6 +2,7 @@
 jest.mock('react-native-nitro-modules', () => {
   const mockProcessor = {
     performOcr: jest.fn(),
+    performOcrOnImage: jest.fn(),
     name: 'OcrProcessor',
     toString: () => '[HybridObject OcrProcessor]',
     equals: jest.fn(),
@@ -14,7 +15,12 @@ jest.mock('react-native-nitro-modules', () => {
   };
 });
 
-import { performOcr, type OcrOptions, type OcrResult } from '../index';
+import {
+  performOcr,
+  performOcrOnImage,
+  type OcrOptions,
+  type OcrResult,
+} from '../index';
 import { NitroModules } from 'react-native-nitro-modules';
 
 describe('@bear-block/vision-camera-ocr', () => {
@@ -26,6 +32,10 @@ describe('@bear-block/vision-camera-ocr', () => {
     jest.clearAllMocks();
     const processor = getMockProcessor();
     processor.performOcr.mockReturnValue({ text: 'test text', blocks: [] });
+    processor.performOcrOnImage.mockResolvedValue({
+      text: 'static test text',
+      blocks: [],
+    });
   });
 
   describe('performOcr', () => {
@@ -114,6 +124,63 @@ describe('@bear-block/vision-camera-ocr', () => {
         false,
         'fast'
       );
+    });
+  });
+
+  describe('performOcrOnImage', () => {
+    it('should export performOcrOnImage function', () => {
+      expect(performOcrOnImage).toBeDefined();
+      expect(typeof performOcrOnImage).toBe('function');
+    });
+
+    it('should call processor with default options', async () => {
+      const processor = getMockProcessor();
+
+      await performOcrOnImage('file:///tmp/label.jpg');
+
+      expect(processor.performOcrOnImage).toHaveBeenCalledWith(
+        'file:///tmp/label.jpg',
+        false,
+        false,
+        'fast'
+      );
+    });
+
+    it('should call processor with provided options', async () => {
+      const processor = getMockProcessor();
+      const options: OcrOptions = {
+        includeBoxes: true,
+        includeConfidence: true,
+        recognitionLevel: 'accurate',
+      };
+
+      await performOcrOnImage('content://media/label', options);
+
+      expect(processor.performOcrOnImage).toHaveBeenCalledWith(
+        'content://media/label',
+        true,
+        true,
+        'accurate'
+      );
+    });
+
+    it('should resolve the result from the processor', async () => {
+      const processor = getMockProcessor();
+      const result: OcrResult = { text: 'nutrition facts', blocks: [] };
+      processor.performOcrOnImage.mockResolvedValue(result);
+
+      await expect(performOcrOnImage('/tmp/label.jpg')).resolves.toEqual(
+        result
+      );
+    });
+
+    it('should reject an empty image URI before calling native code', async () => {
+      const processor = getMockProcessor();
+
+      await expect(performOcrOnImage('   ')).rejects.toThrow(
+        'The image URI must not be empty.'
+      );
+      expect(processor.performOcrOnImage).not.toHaveBeenCalled();
     });
   });
 });
