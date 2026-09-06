@@ -37,7 +37,7 @@ const ocrProcessor =
  *     const result = performOcr(nativeBuffer.pointer, frame.width, frame.height, frame.orientation)
  *     nativeBuffer.release()
  *     frame.dispose()
- *     if (result) {
+ *     if (result.text) {
  *       // handle result via runOnJS or shared value
  *     }
  *   }
@@ -50,7 +50,7 @@ export function performOcr(
   height: number,
   orientation: string,
   options?: OcrOptions
-): import('./specs/OcrProcessor.nitro').OcrResult | null {
+): import('./specs/OcrProcessor.nitro').OcrResult {
   'worklet';
   const result = ocrProcessor.performOcr(
     BigInt(bufferPointer),
@@ -61,7 +61,10 @@ export function performOcr(
     options?.includeConfidence ?? false,
     options?.recognitionLevel ?? 'fast'
   );
-  return result ?? null;
+  // Normalised in JS so both APIs agree: no text is an empty result, not an
+  // absence. Native still returns undefined, so the empty object is only
+  // allocated on the no-text path and never crosses the bridge per frame.
+  return result ?? { text: '', blocks: [] };
 }
 
 /**

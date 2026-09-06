@@ -263,7 +263,7 @@ accepts `content://` URIs. Remote URLs are not supported.
 
 ### `performOcr(bufferPointer, width, height, orientation, options?)`
 
-Performs OCR on a native buffer from a VisionCamera v5 Frame. Runs synchronously on the camera thread (worklet-compatible). Returns `null` when no text is detected.
+Performs OCR on a native buffer from a VisionCamera v5 Frame. Runs synchronously on the camera thread (worklet-compatible). Returns an empty result (`{ text: '', blocks: [] }`) when no text is detected, matching `performOcrOnImage`.
 
 #### Parameters
 
@@ -285,7 +285,7 @@ Performs OCR on a native buffer from a VisionCamera v5 Frame. Runs synchronously
 
 #### Returns
 
-`OcrResult | null`
+`OcrResult`
 
 ```typescript
 interface OcrResult {
