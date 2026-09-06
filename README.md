@@ -45,6 +45,7 @@
 ## Features
 
 - **Real-time Processing** — Instant text recognition from camera frames
+- **Static Image Processing** — Asynchronous OCR for captured photos and photo-library images
 - **Cross-platform** — Native implementation for both Android & iOS
 - **High Performance** — Nitro module runs synchronously on the camera thread
 - **Offline First** — No internet connection required, all processing on-device
@@ -240,6 +241,24 @@ if (result) {
 }
 ```
 
+### Static images
+
+Use `performOcrOnImage` for a photo saved by VisionCamera or selected from the
+photo library. Static recognition runs asynchronously and does not require a
+frame output.
+
+```typescript
+import { performOcrOnImage } from '@bear-block/vision-camera-ocr';
+
+const result = await performOcrOnImage(imageUri, {
+  includeBoxes: true,
+  recognitionLevel: 'accurate',
+});
+```
+
+Both platforms accept absolute paths and `file://` URIs. Android additionally
+accepts `content://` URIs. Remote URLs are not supported.
+
 ## API Reference
 
 ### `performOcr(bufferPointer, width, height, orientation, options?)`
@@ -300,6 +319,13 @@ interface OcrBox {
   height: number;
 }
 ```
+
+### `performOcrOnImage(imageUri, options?)`
+
+Performs OCR asynchronously on a local static image and returns a
+`Promise<OcrResult>`. It accepts the same `OcrOptions` as `performOcr`. The
+result contains empty text and blocks when no text is detected. Invalid,
+missing, or unreadable image URIs reject the promise.
 
 ## Platform-Specific Details
 
