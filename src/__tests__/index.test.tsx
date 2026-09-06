@@ -105,11 +105,11 @@ describe('@bear-block/vision-camera-ocr', () => {
       expect(output).toEqual(result);
     });
 
-    it('should return null when processor returns undefined', () => {
+    it('should return an empty result when processor returns undefined', () => {
       const processor = getMockProcessor();
       processor.performOcr.mockReturnValue(undefined);
       const output = performOcr(12345, 1920, 1080, 'up');
-      expect(output).toBeNull();
+      expect(output).toEqual({ text: '', blocks: [] });
     });
 
     it('should handle bigint buffer pointer', () => {
