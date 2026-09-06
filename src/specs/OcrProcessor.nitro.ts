@@ -42,4 +42,11 @@ export interface OcrProcessor
     includeConfidence: boolean,
     recognitionLevel: string
   ): OcrResult | undefined;
+
+  performOcrOnImage(
+    imageUri: string,
+    includeBoxes: boolean,
+    includeConfidence: boolean,
+    recognitionLevel: string
+  ): Promise<OcrResult>;
 }
