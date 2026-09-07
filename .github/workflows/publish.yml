@@ -84,8 +84,39 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
+      # nitrogen/ is gitignored, so a fresh CI checkout has none of the generated
+      # native bindings. Without this the published tarball omits them entirely
+      # and every consumer's `pod install` / Gradle sync fails on a clean
+      # install, because the podspec and build.gradle load them by path.
+      # Skipped automatically on branches that do not use Nitro.
+      - name: Generate Nitro bindings
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.codegen ? 0 : 1)"; then
+            yarn codegen
+          else
+            echo "No codegen script in package.json; skipping."
+          fi
+
       - name: Build package
         run: yarn prepare
+
+      # Guard against shipping a tarball the native build cannot use. This
+      # exact regression shipped three broken v5 betas before anyone noticed.
+      - name: Verify packed tarball
+        run: |
+          if [ ! -f nitro.json ]; then
+            echo "Not a Nitro package; nothing to verify."
+            exit 0
+          fi
+          npm pack --silent --pack-destination "$RUNNER_TEMP" > "$RUNNER_TEMP/packname"
+          TARBALL="$RUNNER_TEMP/$(cat "$RUNNER_TEMP/packname")"
+          COUNT=$(tar tzf "$TARBALL" | grep -c 'nitrogen/generated' || true)
+          echo "nitrogen/generated files in tarball: $COUNT"
+          if [ "$COUNT" -eq 0 ]; then
+            echo "::error::Tarball contains no nitrogen/generated files, but nitro.json is present."
+            echo "::error::Publishing this would break pod install and Gradle sync for every consumer."
+            exit 1
+          fi
 
       - name: Sync package.json version with release tag
         run: |
