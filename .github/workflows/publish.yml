@@ -102,16 +102,28 @@ jobs:
 
       # Guard against shipping a tarball the native build cannot use. This
       # exact regression shipped three broken v5 betas before anyone noticed.
+      #
+      # Pack into its own directory and find the tarball on disk rather than
+      # reading npm pack's stdout: lifecycle scripts write there too, which
+      # made an earlier version of this check fail on a perfectly good package.
       - name: Verify packed tarball
         run: |
           if [ ! -f nitro.json ]; then
             echo "Not a Nitro package; nothing to verify."
             exit 0
           fi
-          npm pack --silent --pack-destination "$RUNNER_TEMP" > "$RUNNER_TEMP/packname"
-          TARBALL="$RUNNER_TEMP/$(cat "$RUNNER_TEMP/packname")"
+          PACKDIR="$RUNNER_TEMP/pack"
+          rm -rf "$PACKDIR"
+          mkdir -p "$PACKDIR"
+          # --ignore-scripts: the build already ran in the previous step.
+          npm pack --ignore-scripts --pack-destination "$PACKDIR" >/dev/null
+          TARBALL=$(find "$PACKDIR" -name '*.tgz' | head -1)
+          if [ -z "$TARBALL" ]; then
+            echo "::error::npm pack produced no tarball."
+            exit 1
+          fi
           COUNT=$(tar tzf "$TARBALL" | grep -c 'nitrogen/generated' || true)
-          echo "nitrogen/generated files in tarball: $COUNT"
+          echo "nitrogen/generated files in $(basename "$TARBALL"): $COUNT"
           if [ "$COUNT" -eq 0 ]; then
             echo "::error::Tarball contains no nitrogen/generated files, but nitro.json is present."
             echo "::error::Publishing this would break pod install and Gradle sync for every consumer."
