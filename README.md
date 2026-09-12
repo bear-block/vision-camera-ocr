@@ -7,6 +7,7 @@
 ![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS-lightgrey.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Version](https://img.shields.io/badge/version-4.0.0-blue.svg)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow.svg?logo=buy-me-a-coffee)](https://buymeacoffee.com/bearblock)
 
 **A high-performance React Native Vision Camera plugin for real-time OCR (Optical Character Recognition)**
 
@@ -344,6 +345,14 @@ yarn test
 yarn typecheck
 yarn lint
 ```
+
+## Support
+
+If this package saves you time, consider buying me a coffee ☕️
+
+<a href="https://buymeacoffee.com/bearblock" target="_blank">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="180">
+</a>
 
 ## License
 
