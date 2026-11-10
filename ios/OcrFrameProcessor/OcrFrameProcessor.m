@@ -30,6 +30,14 @@
 
 - (id _Nullable)callback:(Frame* _Nonnull)frame
            withArguments:(NSDictionary* _Nullable)arguments {
+  // Release Vision's temporary references to the camera buffer after each async worklet call.
+  @autoreleasepool {
+    return [self recognizeFrame:frame withArguments:arguments];
+  }
+}
+
+- (id _Nullable)recognizeFrame:(Frame* _Nonnull)frame
+                 withArguments:(NSDictionary* _Nullable)arguments {
   BOOL includeBoxes = [arguments objectForKey:@"includeBoxes"] ? [[arguments objectForKey:@"includeBoxes"] boolValue] : NO;
   BOOL includeConfidence = [arguments objectForKey:@"includeConfidence"] ? [[arguments objectForKey:@"includeConfidence"] boolValue] : NO;
   NSLog(@"Args includeBoxes=%@ includeConfidence=%@", includeBoxes ? @"YES" : @"NO", includeConfidence ? @"YES" : @"NO");
